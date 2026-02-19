@@ -12,11 +12,23 @@ export interface Product {
   created_at?: string;
 }
 
+export interface Order {
+  id: string;
+  user_id: string;
+  user_email: string;
+  product_names: string;
+  total_price: number;
+  status: string;
+  tracking_code?: string;
+  last_location?: string;
+  created_at: string;
+}
+
 export interface CartItem extends Product {
   quantity: number;
 }
 
-export type View = 'welcome' | 'home' | 'details' | 'cart' | 'admin' | 'auth';
+export type View = 'welcome' | 'home' | 'details' | 'cart' | 'admin' | 'auth' | 'search' | 'profile';
 
 export enum Category {
   Sneakers = 'Sneakers',

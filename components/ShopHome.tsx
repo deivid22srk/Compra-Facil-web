@@ -7,9 +7,10 @@ import { Product } from '../types';
 interface ShopHomeProps {
   onProductClick: (p: Product) => void;
   onAddToCart: (p: Product) => void;
+  onOpenSearch: () => void;
 }
 
-const ShopHome: React.FC<ShopHomeProps> = ({ onProductClick, onAddToCart }) => {
+const ShopHome: React.FC<ShopHomeProps> = ({ onProductClick, onAddToCart, onOpenSearch }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,25 +36,15 @@ const ShopHome: React.FC<ShopHomeProps> = ({ onProductClick, onAddToCart }) => {
 
   return (
     <div className="p-4 pt-8 animate-in fade-in duration-500">
-      {/* Header & Search */}
-      <div className="relative mb-6">
+      {/* Header & Search Trigger */}
+      <div className="relative mb-6 cursor-pointer" onClick={onOpenSearch}>
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-        <input 
-          type="text" 
-          placeholder="Search Shoes, Watch..." 
-          className="w-full pl-12 pr-4 py-3 bg-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-        />
+        <div className="w-full pl-12 pr-4 py-3 bg-slate-100 rounded-2xl text-slate-400 text-sm">
+          O que você está procurando?
+        </div>
       </div>
 
-      {/* Hero Banner */}
-      <div className="bg-yellow-100 rounded-3xl p-6 mb-8 flex justify-between items-center relative overflow-hidden">
-        <div className="z-10">
-          <p className="text-yellow-600 font-bold uppercase text-xs tracking-wider mb-1">Casual Shoe</p>
-          <h2 className="text-3xl font-black text-slate-800 leading-tight mb-4">40% OFF</h2>
-          <button className="bg-slate-900 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-slate-200">SHOP NOW</button>
-        </div>
-        <img src="https://picsum.photos/seed/shoes/300/300" alt="Shoes" className="absolute -right-10 -bottom-10 w-48 h-48 rotate-12 drop-shadow-2xl" />
-      </div>
+      {/* Hero Banner REMOVED per user request */}
 
       {/* Categories */}
       <div className="flex justify-between mb-8 overflow-x-auto no-scrollbar gap-4">
@@ -67,12 +58,12 @@ const ShopHome: React.FC<ShopHomeProps> = ({ onProductClick, onAddToCart }) => {
         ))}
       </div>
 
-      {/* Flash Sale Header */}
+      {/* Featured Header */}
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold flex items-center gap-2">
-          Fla<Zap className="text-yellow-400 fill-yellow-400" size={18} />h sale
+          Destaques <Zap className="text-yellow-400 fill-yellow-400" size={18} />
         </h3>
-        <button className="text-indigo-600 font-bold text-sm">View all</button>
+        <button className="text-indigo-600 font-bold text-sm">Ver todos</button>
       </div>
 
       {/* Product Grid */}

@@ -8,6 +8,8 @@ import CartView from './components/CartView';
 import AdminPanel from './components/AdminPanel';
 import AuthView from './components/AuthView';
 import WelcomeView from './components/WelcomeView';
+import SearchView from './components/SearchView';
+import ProfileView from './components/ProfileView';
 import BottomNav from './components/BottomNav';
 import { User } from '@supabase/supabase-js';
 
@@ -81,7 +83,11 @@ const App: React.FC = () => {
 
     switch (currentView) {
       case 'home':
-        return <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} />;
+        return <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
+      case 'search':
+        return <SearchView onProductClick={navigateToDetails} onBack={() => setCurrentView('home')} onAddToCart={addToCart} />;
+      case 'profile':
+        return <ProfileView user={user} onBack={() => setCurrentView('home')} onAuthClick={() => setCurrentView('auth')} />;
       case 'details':
         return selectedProduct ? (
           <ProductDetails 
@@ -89,19 +95,19 @@ const App: React.FC = () => {
             onBack={() => setCurrentView('home')} 
             onAddToCart={addToCart}
           />
-        ) : <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} />;
+        ) : <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
       case 'cart':
         return <CartView cart={cart} onUpdateQuantity={updateCartQuantity} onBack={() => setCurrentView('home')} />;
       case 'admin':
         return user ? <AdminPanel onBack={() => setCurrentView('home')} /> : <AuthView onBack={() => setCurrentView('home')} />;
       case 'auth':
-        return <AuthView onBack={() => (hasStarted ? setCurrentView('home') : setCurrentView('welcome'))} />;
+        return <AuthView onBack={() => (hasStarted ? (user ? setCurrentView('profile') : setCurrentView('home')) : setCurrentView('welcome'))} />;
       default:
-        return <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} />;
+        return <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
     }
   };
 
-  const showNav = currentView !== 'details' && currentView !== 'welcome' && (currentView !== 'auth' || hasStarted);
+  const showNav = currentView !== 'details' && currentView !== 'welcome' && currentView !== 'search' && (currentView !== 'auth' || hasStarted);
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden">

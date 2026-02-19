@@ -18,7 +18,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, cartCount
         className={`flex flex-col items-center gap-1 transition-all ${activeView === 'home' ? 'text-indigo-600 scale-110' : 'text-slate-300'}`}
       >
         <Home size={22} />
-        <span className="text-[10px] font-bold">Home</span>
+        <span className="text-[10px] font-bold">Início</span>
       </button>
 
       <button 
@@ -56,11 +56,11 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, cartCount
       </div>
 
       <button 
-        onClick={() => isGuest ? onNavigate('auth') : null}
-        className={`flex flex-col items-center gap-1 ${!isGuest ? 'text-indigo-600' : 'text-slate-300'}`}
+        onClick={() => onNavigate('profile')}
+        className={`flex flex-col items-center gap-1 transition-all ${activeView === 'profile' ? 'text-indigo-600 scale-110' : 'text-slate-300'}`}
       >
         <User size={22} />
-        <span className="text-[10px] font-bold">{isGuest ? 'Login' : 'Perfil'}</span>
+        <span className="text-[10px] font-bold">Perfil</span>
       </button>
 
       <div className="flex flex-col items-center gap-1 text-slate-300">

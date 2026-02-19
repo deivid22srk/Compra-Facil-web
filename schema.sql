@@ -1,6 +1,6 @@
 
--- Tabela de Produtos
-create table public.products (
+-- Tabela de Produtos (Existing)
+create table if not exists public.products (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   description text,
@@ -13,25 +13,36 @@ create table public.products (
   created_at timestamp with time zone default now()
 );
 
--- Habilitar RLS (Row Level Security)
+-- Tabela de Pedidos/Rastreio
+create table if not exists public.orders (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  user_email text not null,
+  product_names text not null,
+  total_price decimal not null,
+  status text default 'Processando' not null, -- Processando, Enviado, Em Trânsito, Entregue
+  tracking_code text,
+  last_location text default 'Centro de Distribuição',
+  created_at timestamp with time zone default now()
+);
+
+-- Habilitar RLS
 alter table public.products enable row level security;
+alter table public.orders enable row level security;
 
--- Políticas de Acesso
-create policy "Permitir leitura para todos" on public.products
-  for select using (true);
+-- Políticas de Produtos
+create policy "Permitir leitura para todos" on public.products for select using (true);
+create policy "Admin total produtos" on public.products for all using (auth.role() = 'authenticated');
 
-create policy "Permitir inserção para usuários autenticados" on public.products
-  for insert with check (auth.role() = 'authenticated');
+-- Políticas de Pedidos
+create policy "Usuários veem seus próprios pedidos" on public.orders 
+  for select using (auth.uid() = user_id);
 
-create policy "Permitir atualização para usuários autenticados" on public.products
+create policy "Admins veem todos os pedidos" on public.orders
+  for select using (auth.role() = 'authenticated');
+
+create policy "Admins editam pedidos" on public.orders
   for update using (auth.role() = 'authenticated');
 
-create policy "Permitir exclusão para usuários autenticados" on public.products
-  for delete using (auth.role() = 'authenticated');
-
--- Inserir dados de exemplo (opcional)
-insert into public.products (name, description, price, original_price, category, image_url)
-values 
-('Beats Studio Wireless', 'Som premium e cancelamento de ruído.', 1299.00, 1599.00, 'Electronics', 'https://picsum.photos/seed/beats/400/400'),
-('Apple Watch Series 3', 'O parceiro ideal para sua saúde.', 1899.00, 2199.00, 'Watches', 'https://picsum.photos/seed/watch/400/400'),
-('Bolsa Feminina Amarela', 'Estilo e praticidade para o dia a dia.', 149.90, 199.00, 'Apparel', 'https://picsum.photos/seed/bag/400/400');
+create policy "Usuários criam pedidos" on public.orders
+  for insert with check (auth.role() = 'authenticated');
