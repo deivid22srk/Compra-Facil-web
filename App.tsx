@@ -52,6 +52,17 @@ const App: React.FC = () => {
     });
   };
 
+  const handleBuyNow = (product: Product) => {
+    if (!user) {
+      alert('Faça login para realizar uma compra rápida.');
+      setCurrentView('auth');
+      return;
+    }
+    // Add to cart and immediately go to cart
+    setCart([{ ...product, quantity: 1 }]);
+    setCurrentView('cart');
+  };
+
   const updateCartQuantity = (id: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === id) {
@@ -76,6 +87,12 @@ const App: React.FC = () => {
     setCurrentView('auth');
   };
 
+  const handleOrderSuccess = () => {
+    setCart([]);
+    setCurrentView('profile');
+    alert('Pedido realizado com sucesso! Pague na entrega.');
+  };
+
   const renderView = () => {
     if (currentView === 'welcome' && !user && !hasStarted) {
       return <WelcomeView onStartAsGuest={handleStartAsGuest} onGoToAuth={handleGoToAuth} />;
@@ -94,10 +111,11 @@ const App: React.FC = () => {
             product={selectedProduct} 
             onBack={() => setCurrentView('home')} 
             onAddToCart={addToCart}
+            onBuyNow={handleBuyNow}
           />
         ) : <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
       case 'cart':
-        return <CartView cart={cart} onUpdateQuantity={updateCartQuantity} onBack={() => setCurrentView('home')} />;
+        return <CartView cart={cart} user={user} onUpdateQuantity={updateCartQuantity} onBack={() => setCurrentView('home')} onOrderSuccess={handleOrderSuccess} />;
       case 'admin':
         return user ? <AdminPanel onBack={() => setCurrentView('home')} /> : <AuthView onBack={() => setCurrentView('home')} />;
       case 'auth':
@@ -110,8 +128,8 @@ const App: React.FC = () => {
   const showNav = currentView !== 'details' && currentView !== 'welcome' && currentView !== 'search' && (currentView !== 'auth' || hasStarted);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden">
-      <div className={showNav ? "pb-24" : ""}>
+    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden flex flex-col">
+      <div className={`flex-1 overflow-y-auto no-scrollbar ${showNav ? "pb-24" : ""}`}>
         {renderView()}
       </div>
       

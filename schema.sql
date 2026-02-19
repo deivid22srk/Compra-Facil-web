@@ -20,9 +20,12 @@ create table if not exists public.orders (
   user_email text not null,
   product_names text not null,
   total_price decimal not null,
-  status text default 'Processando' not null, -- Processando, Enviado, Em Trânsito, Entregue
+  status text default 'Processando' not null,
   tracking_code text,
   last_location text default 'Centro de Distribuição',
+  delivery_lat decimal,
+  delivery_lng decimal,
+  payment_method text default 'Pagamento na Entrega',
   created_at timestamp with time zone default now()
 );
 
@@ -30,19 +33,10 @@ create table if not exists public.orders (
 alter table public.products enable row level security;
 alter table public.orders enable row level security;
 
--- Políticas de Produtos
+-- Políticas
 create policy "Permitir leitura para todos" on public.products for select using (true);
 create policy "Admin total produtos" on public.products for all using (auth.role() = 'authenticated');
-
--- Políticas de Pedidos
-create policy "Usuários veem seus próprios pedidos" on public.orders 
-  for select using (auth.uid() = user_id);
-
-create policy "Admins veem todos os pedidos" on public.orders
-  for select using (auth.role() = 'authenticated');
-
-create policy "Admins editam pedidos" on public.orders
-  for update using (auth.role() = 'authenticated');
-
-create policy "Usuários criam pedidos" on public.orders
-  for insert with check (auth.role() = 'authenticated');
+create policy "Usuários veem seus próprios pedidos" on public.orders for select using (auth.uid() = user_id);
+create policy "Admins veem todos os pedidos" on public.orders for select using (auth.role() = 'authenticated');
+create policy "Admins editam pedidos" on public.orders for update using (auth.role() = 'authenticated');
+create policy "Usuários criam pedidos" on public.orders for insert with check (auth.role() = 'authenticated');
