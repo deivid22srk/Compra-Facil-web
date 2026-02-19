@@ -71,27 +71,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover este produto definitivamente?')) return;
-    
+    if (!confirm('Remover este produto?')) return;
     setDeletingId(id);
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Atualização otimista: remove da lista local imediatamente
-      setProducts(prev => prev.filter(p => p.id !== id));
-      
-    } catch (error: any) {
-      alert('Erro ao remover produto: ' + error.message);
-      // Recarrega a lista caso tenha ocorrido erro para sincronizar
-      fetchProducts();
-    } finally {
-      setDeletingId(null);
-    }
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (!error) setProducts(prev => prev.filter(p => p.id !== id));
+    setDeletingId(null);
   };
 
   const updateOrderStatus = async (id: string, newStatus: string, lastLocation: string) => {
@@ -101,20 +85,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       last_location: lastLocation,
       tracking_code: `BR${Math.floor(Math.random() * 90000000) + 10000000}SH`
     }).eq('id', id);
-    
-    if (error) alert('Erro ao atualizar status: ' + error.message);
-    fetchOrders();
+    if (!error) fetchOrders();
     setLoading(false);
   };
 
   const generateAiDescription = async () => {
-    if (!formData.name) return alert('Dê um nome ao produto primeiro');
+    const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : undefined;
+    if (!apiKey) return alert('Chave de IA não configurada no ambiente local.');
+    if (!formData.name) return alert('Nome do produto é necessário.');
+    
     setAiGenerating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Escreva uma descrição de marketing curta e atraente para o produto: ${formData.name}. Categoria: ${formData.category}. Em português do Brasil. Máximo de 150 caracteres.`,
+        contents: `Descrição curta de marketing para: ${formData.name}. Categoria: ${formData.category}. Português.`,
       });
       setFormData(prev => ({ ...prev, description: response.text || '' }));
     } catch (err) {
@@ -131,212 +116,65 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
           <button onClick={onBack} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
             <ArrowLeft size={20} />
           </button>
-          <div>
-            <h1 className="text-2xl font-black text-slate-800">Admin</h1>
-            <p className="text-xs text-slate-400">Controle total da loja</p>
-          </div>
+          <h1 className="text-2xl font-black text-slate-800">Admin</h1>
         </div>
-        <button onClick={handleLogout} className="p-3 text-red-500 bg-white rounded-2xl shadow-sm hover:bg-red-50 transition-colors">
+        <button onClick={handleLogout} className="p-3 text-red-500 bg-white rounded-2xl shadow-sm">
           <LogOut size={20} />
         </button>
       </div>
 
       <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
-        <button 
-          onClick={() => setActiveTab('products')}
-          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'products' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}
-        >
-          Produtos
-        </button>
-        <button 
-          onClick={() => setActiveTab('orders')}
-          className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'orders' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}
-        >
-          Rastreios
-        </button>
+        <button onClick={() => setActiveTab('products')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Produtos</button>
+        <button onClick={() => setActiveTab('orders')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase ${activeTab === 'orders' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Pedidos</button>
       </div>
 
       {activeTab === 'products' ? (
-        <>
+        <div className="space-y-4">
           {!isAdding ? (
-            <div className="space-y-4">
-              <button 
-                onClick={() => setIsAdding(true)}
-                className="w-full bg-indigo-600 text-white p-4 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-transform"
-              >
-                <Plus size={20} /> Novo Produto
-              </button>
-
-              <div className="grid gap-4">
-                {products.length === 0 ? (
-                  <div className="text-center py-20 bg-white rounded-[32px] border border-dashed border-slate-200">
-                    <Package size={48} className="mx-auto text-slate-200 mb-4" />
-                    <p className="text-slate-400 text-sm font-bold">Nenhum produto cadastrado</p>
+            <>
+              <button onClick={() => setIsAdding(true)} className="w-full bg-indigo-600 text-white p-4 rounded-2xl font-bold shadow-lg">+ Novo Produto</button>
+              {products.map(p => (
+                <div key={p.id} className="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4">
+                  <img src={p.image_url} className="w-12 h-12 object-contain" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-slate-800">{p.name}</h4>
+                    <p className="text-xs text-indigo-600">R$ {p.price}</p>
                   </div>
-                ) : (
-                  products.map(p => (
-                    <div key={p.id} className="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 group hover:shadow-md transition-shadow">
-                      <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-2">
-                        <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{p.name}</h4>
-                        <p className="text-xs text-indigo-600 font-bold">R$ {p.price.toLocaleString('pt-BR')}</p>
-                      </div>
-                      <button 
-                        onClick={() => handleDelete(p.id)} 
-                        disabled={deletingId === p.id}
-                        className={`p-3 rounded-xl transition-all ${deletingId === p.id ? 'bg-slate-50 text-slate-300' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
-                        title="Excluir Produto"
-                      >
-                        {deletingId === p.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+                  <button onClick={() => handleDelete(p.id)} disabled={deletingId === p.id} className="p-2 text-slate-300 hover:text-rose-500">
+                    {deletingId === p.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                  </button>
+                </div>
+              ))}
+            </>
           ) : (
-            <form onSubmit={handleSave} className="bg-white p-6 rounded-[32px] shadow-sm space-y-4 animate-in slide-in-from-bottom duration-300">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Novo Produto</h2>
-                <button type="button" onClick={() => setIsAdding(false)} className="text-slate-400 font-bold hover:text-slate-600">Cancelar</button>
+            <form onSubmit={handleSave} className="bg-white p-6 rounded-[32px] space-y-4">
+              <input placeholder="Nome" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+              <input placeholder="Preço" type="number" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-400">Descrição</span>
+                <button type="button" onClick={generateAiDescription} className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg">Gerar com IA</button>
               </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase">Nome</label>
-                <input 
-                  required
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  placeholder="Ex: Tênis Nike Air"
-                />
+              <textarea placeholder="Descrição" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              <input placeholder="URL da Imagem" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+              <div className="flex gap-4">
+                <button type="submit" className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black">Salvar</button>
+                <button type="button" onClick={() => setIsAdding(false)} className="flex-1 bg-slate-100 py-4 rounded-2xl font-black">Cancelar</button>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Preço</label>
-                  <input 
-                    required type="number" step="0.01"
-                    className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                    value={formData.price}
-                    onChange={e => setFormData({...formData, price: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Preço Antigo</label>
-                  <input 
-                    type="number" step="0.01"
-                    className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                    value={formData.original_price}
-                    onChange={e => setFormData({...formData, original_price: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <label className="text-xs font-bold text-slate-400 uppercase">Descrição</label>
-                  <button 
-                    type="button" 
-                    onClick={generateAiDescription}
-                    disabled={aiGenerating}
-                    className="text-[10px] flex items-center gap-1 text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-lg hover:bg-indigo-100 disabled:opacity-50"
-                  >
-                    <Sparkles size={10} /> {aiGenerating ? 'Gerando...' : 'IA Gerar'}
-                  </button>
-                </div>
-                <textarea 
-                  rows={3}
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase">URL Imagem</label>
-                <div className="flex gap-2">
-                  <input 
-                    required
-                    className="flex-1 p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 text-xs outline-none"
-                    value={formData.image_url}
-                    onChange={e => setFormData({...formData, image_url: e.target.value})}
-                  />
-                  <button type="button" className="p-4 bg-slate-100 rounded-2xl text-slate-400">
-                    <ImageIcon size={20} />
-                  </button>
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 uppercase tracking-widest mt-6 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
-              >
-                {loading ? <Loader2 className="animate-spin" /> : 'Salvar Produto'}
-              </button>
             </form>
           )}
-        </>
+        </div>
       ) : (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
-              <Package size={20} className="text-indigo-600" /> Gerenciar Pedidos
-            </h2>
-            <button onClick={fetchOrders} className="p-2 bg-white rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 transition-colors">
-              <RefreshCw size={18} />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {orders.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-[32px] border border-dashed border-slate-200">
-                <Package size={48} className="mx-auto text-slate-200 mb-4" />
-                <p className="text-slate-400 text-sm font-bold">Nenhum pedido realizado ainda</p>
+        <div className="space-y-4">
+          {orders.map(order => (
+            <div key={order.id} className="bg-white p-6 rounded-[32px] shadow-sm space-y-4">
+              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{order.user_email}</p>
+              <h4 className="text-sm font-bold">{order.product_names}</h4>
+              <div className="flex gap-2">
+                <button onClick={() => updateOrderStatus(order.id, 'Em Trânsito', 'A caminho')} className={`flex-1 p-3 rounded-xl text-[10px] font-bold border ${order.status === 'Em Trânsito' ? 'bg-indigo-600 text-white' : 'border-slate-100'}`}>Trânsito</button>
+                <button onClick={() => updateOrderStatus(order.id, 'Entregue', 'Entregue')} className={`flex-1 p-3 rounded-xl text-[10px] font-bold border ${order.status === 'Entregue' ? 'bg-emerald-500 text-white' : 'border-slate-100'}`}>Entregue</button>
               </div>
-            ) : (
-              orders.map(order => (
-                <div key={order.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 space-y-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
-                    <div>
-                       <div className="flex items-center gap-2 text-indigo-600 mb-1">
-                          <UserIcon size={14} />
-                          <p className="text-[10px] font-black uppercase tracking-wider">{order.user_email}</p>
-                       </div>
-                       <h4 className="text-sm font-bold text-slate-800">{order.product_names}</h4>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-300">#{order.id.slice(0, 8)}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                     <button 
-                        onClick={() => updateOrderStatus(order.id, 'Enviado', 'Centro Logístico BR')}
-                        className={`p-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Enviado' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'border-slate-50 text-slate-400'}`}
-                     >
-                       Enviado
-                     </button>
-                     <button 
-                        onClick={() => updateOrderStatus(order.id, 'Em Trânsito', 'Rumo à Cidade de Entrega')}
-                        className={`p-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Em Trânsito' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'border-slate-50 text-slate-400'}`}
-                     >
-                       Em Trânsito
-                     </button>
-                  </div>
-
-                  <button 
-                     onClick={() => updateOrderStatus(order.id, 'Entregue', 'Endereço do Cliente')}
-                     className={`w-full p-4 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border-2 transition-all active:scale-95 ${order.status === 'Entregue' ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100' : 'border-slate-50 text-slate-400'}`}
-                  >
-                    {order.status === 'Entregue' ? <Check size={16} /> : null}
-                    Marcar como Entregue
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

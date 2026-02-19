@@ -34,8 +34,12 @@ const App: React.FC = () => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
+        // If user logged in while on Auth screen, send them home if they just started, or profile
         setCurrentView('home');
         setHasStarted(true);
+      } else {
+        // User logged out
+        setUser(null);
       }
     });
 
@@ -58,7 +62,7 @@ const App: React.FC = () => {
       setCurrentView('auth');
       return;
     }
-    // Add to cart and immediately go to cart
+    // Set cart to just this product and go to checkout
     setCart([{ ...product, quantity: 1 }]);
     setCurrentView('cart');
   };
@@ -90,7 +94,7 @@ const App: React.FC = () => {
   const handleOrderSuccess = () => {
     setCart([]);
     setCurrentView('profile');
-    alert('Pedido realizado com sucesso! Pague na entrega.');
+    alert('Pedido realizado com sucesso! Pague ao entregador quando receber seus produtos.');
   };
 
   const renderView = () => {
@@ -115,7 +119,14 @@ const App: React.FC = () => {
           />
         ) : <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
       case 'cart':
-        return <CartView cart={cart} user={user} onUpdateQuantity={updateCartQuantity} onBack={() => setCurrentView('home')} onOrderSuccess={handleOrderSuccess} />;
+        return <CartView 
+          cart={cart} 
+          user={user} 
+          onUpdateQuantity={updateCartQuantity} 
+          onBack={() => setCurrentView('home')} 
+          onOrderSuccess={handleOrderSuccess} 
+          onGoToAuth={() => setCurrentView('auth')}
+        />;
       case 'admin':
         return user ? <AdminPanel onBack={() => setCurrentView('home')} /> : <AuthView onBack={() => setCurrentView('home')} />;
       case 'auth':
