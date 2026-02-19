@@ -5,17 +5,28 @@ export interface Product {
   description: string;
   price: number;
   original_price?: number;
-  category: string;
-  image_url: string;
+  category: 'Produtos' | 'Serviços';
+  image_urls: string[];
   rating: number;
   rating_count: number;
   created_at?: string;
+}
+
+export interface Review {
+  id: string;
+  product_id: string;
+  user_email: string;
+  user_name?: string;
+  rating: number;
+  comment: string;
+  created_at: string;
 }
 
 export interface Order {
   id: string;
   user_id: string;
   user_email: string;
+  whatsapp_number: string;
   product_names: string;
   total_price: number;
   status: string;
@@ -32,10 +43,3 @@ export interface CartItem extends Product {
 }
 
 export type View = 'welcome' | 'home' | 'details' | 'cart' | 'admin' | 'auth' | 'search' | 'profile';
-
-export enum Category {
-  Sneakers = 'Sneakers',
-  Watches = 'Watches',
-  Electronics = 'Electronics',
-  Apparel = 'Apparel'
-}

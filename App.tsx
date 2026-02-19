@@ -123,6 +123,7 @@ const App: React.FC = () => {
           onNavigate={(view) => setCurrentView(view)} 
           cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
           isGuest={!user}
+          user={user}
         />
       )}
     </div>

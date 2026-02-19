@@ -79,7 +79,8 @@ const SearchView: React.FC<SearchViewProps> = ({ onBack, onProductClick, onAddTo
             {results.map(p => (
               <div key={p.id} className="bg-white p-3 rounded-2xl border border-slate-50 flex gap-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => onProductClick(p)}>
                 <div className="w-20 h-20 bg-slate-100 rounded-xl overflow-hidden p-2 flex items-center justify-center">
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
+                  {/* Fixed: Updated p.image_url to p.image_urls[0] to match updated Product interface */}
+                  <img src={p.image_urls[0]} alt={p.name} className="w-full h-full object-contain" />
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
                   <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{p.name}</h4>
