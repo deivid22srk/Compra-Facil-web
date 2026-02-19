@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, LayoutGrid, Image as ImageIcon, Sparkles, LogOut, ArrowLeft, Package, Check, RefreshCw, User as UserIcon } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, Image as ImageIcon, Sparkles, LogOut, ArrowLeft, Package, Check, RefreshCw, User as UserIcon, Loader2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { Product, Order } from '../types';
 import { GoogleGenAI } from "@google/genai";
@@ -16,6 +16,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -63,24 +64,45 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       setIsAdding(false);
       setFormData({ name: '', description: '', price: '', original_price: '', category: 'Electronics', image_url: '' });
       fetchProducts();
+    } else {
+      alert('Erro ao salvar produto: ' + error.message);
     }
     setLoading(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Deseja excluir este produto?')) {
-      await supabase.from('products').delete().eq('id', id);
+    if (!confirm('Tem certeza que deseja remover este produto definitivamente?')) return;
+    
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Atualização otimista: remove da lista local imediatamente
+      setProducts(prev => prev.filter(p => p.id !== id));
+      
+    } catch (error: any) {
+      alert('Erro ao remover produto: ' + error.message);
+      // Recarrega a lista caso tenha ocorrido erro para sincronizar
       fetchProducts();
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const updateOrderStatus = async (id: string, newStatus: string, lastLocation: string) => {
     setLoading(true);
-    await supabase.from('orders').update({ 
+    const { error } = await supabase.from('orders').update({ 
       status: newStatus, 
       last_location: lastLocation,
       tracking_code: `BR${Math.floor(Math.random() * 90000000) + 10000000}SH`
     }).eq('id', id);
+    
+    if (error) alert('Erro ao atualizar status: ' + error.message);
     fetchOrders();
     setLoading(false);
   };
@@ -114,7 +136,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             <p className="text-xs text-slate-400">Controle total da loja</p>
           </div>
         </div>
-        <button onClick={handleLogout} className="p-3 text-red-500 bg-white rounded-2xl shadow-sm">
+        <button onClick={handleLogout} className="p-3 text-red-500 bg-white rounded-2xl shadow-sm hover:bg-red-50 transition-colors">
           <LogOut size={20} />
         </button>
       </div>
@@ -140,40 +162,52 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             <div className="space-y-4">
               <button 
                 onClick={() => setIsAdding(true)}
-                className="w-full bg-indigo-600 text-white p-4 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-lg shadow-indigo-100"
+                className="w-full bg-indigo-600 text-white p-4 rounded-2xl flex items-center justify-center gap-2 font-bold shadow-lg shadow-indigo-100 active:scale-95 transition-transform"
               >
                 <Plus size={20} /> Novo Produto
               </button>
 
               <div className="grid gap-4">
-                {products.map(p => (
-                  <div key={p.id} className="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 group">
-                    <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
-                      <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-bold line-clamp-1">{p.name}</h4>
-                      <p className="text-xs text-indigo-600 font-bold">R$ {p.price}</p>
-                    </div>
-                    <button onClick={() => handleDelete(p.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
+                {products.length === 0 ? (
+                  <div className="text-center py-20 bg-white rounded-[32px] border border-dashed border-slate-200">
+                    <Package size={48} className="mx-auto text-slate-200 mb-4" />
+                    <p className="text-slate-400 text-sm font-bold">Nenhum produto cadastrado</p>
                   </div>
-                ))}
+                ) : (
+                  products.map(p => (
+                    <div key={p.id} className="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-4 group hover:shadow-md transition-shadow">
+                      <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-2">
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-slate-800 line-clamp-1">{p.name}</h4>
+                        <p className="text-xs text-indigo-600 font-bold">R$ {p.price.toLocaleString('pt-BR')}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleDelete(p.id)} 
+                        disabled={deletingId === p.id}
+                        className={`p-3 rounded-xl transition-all ${deletingId === p.id ? 'bg-slate-50 text-slate-300' : 'text-slate-300 hover:text-rose-500 hover:bg-rose-50'}`}
+                        title="Excluir Produto"
+                      >
+                        {deletingId === p.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           ) : (
             <form onSubmit={handleSave} className="bg-white p-6 rounded-[32px] shadow-sm space-y-4 animate-in slide-in-from-bottom duration-300">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Novo Produto</h2>
-                <button type="button" onClick={() => setIsAdding(false)} className="text-slate-400">Cancelar</button>
+                <button type="button" onClick={() => setIsAdding(false)} className="text-slate-400 font-bold hover:text-slate-600">Cancelar</button>
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase">Nome</label>
                 <input 
                   required
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                   placeholder="Ex: Tênis Nike Air"
@@ -185,7 +219,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   <label className="text-xs font-bold text-slate-400 uppercase">Preço</label>
                   <input 
                     required type="number" step="0.01"
-                    className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none"
                     value={formData.price}
                     onChange={e => setFormData({...formData, price: e.target.value})}
                   />
@@ -194,7 +228,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   <label className="text-xs font-bold text-slate-400 uppercase">Preço Antigo</label>
                   <input 
                     type="number" step="0.01"
-                    className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none"
                     value={formData.original_price}
                     onChange={e => setFormData({...formData, original_price: e.target.value})}
                   />
@@ -215,7 +249,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 </div>
                 <textarea 
                   rows={3}
-                  className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 />
@@ -226,7 +260,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 <div className="flex gap-2">
                   <input 
                     required
-                    className="flex-1 p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                    className="flex-1 p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 text-xs outline-none"
                     value={formData.image_url}
                     onChange={e => setFormData({...formData, image_url: e.target.value})}
                   />
@@ -239,9 +273,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 uppercase tracking-widest mt-6 disabled:opacity-50"
+                className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl shadow-slate-200 uppercase tracking-widest mt-6 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
               >
-                {loading ? 'Salvando...' : 'Salvar Produto'}
+                {loading ? <Loader2 className="animate-spin" /> : 'Salvar Produto'}
               </button>
             </form>
           )}
@@ -249,25 +283,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
       ) : (
         <div className="space-y-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
               <Package size={20} className="text-indigo-600" /> Gerenciar Pedidos
             </h2>
-            <button onClick={fetchOrders} className="p-2 bg-white rounded-xl shadow-sm text-slate-400">
+            <button onClick={fetchOrders} className="p-2 bg-white rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 transition-colors">
               <RefreshCw size={18} />
             </button>
           </div>
 
           <div className="space-y-4">
             {orders.length === 0 ? (
-              <p className="text-center text-slate-400 py-10">Nenhum pedido realizado ainda.</p>
+              <div className="text-center py-20 bg-white rounded-[32px] border border-dashed border-slate-200">
+                <Package size={48} className="mx-auto text-slate-200 mb-4" />
+                <p className="text-slate-400 text-sm font-bold">Nenhum pedido realizado ainda</p>
+              </div>
             ) : (
               orders.map(order => (
-                <div key={order.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 space-y-4">
+                <div key={order.id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 space-y-4 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div>
                        <div className="flex items-center gap-2 text-indigo-600 mb-1">
                           <UserIcon size={14} />
-                          <p className="text-[10px] font-black uppercase">{order.user_email}</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider">{order.user_email}</p>
                        </div>
                        <h4 className="text-sm font-bold text-slate-800">{order.product_names}</h4>
                     </div>
@@ -277,13 +314,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                   <div className="grid grid-cols-2 gap-2">
                      <button 
                         onClick={() => updateOrderStatus(order.id, 'Enviado', 'Centro Logístico BR')}
-                        className={`p-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Enviado' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-50 text-slate-400'}`}
+                        className={`p-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Enviado' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'border-slate-50 text-slate-400'}`}
                      >
                        Enviado
                      </button>
                      <button 
                         onClick={() => updateOrderStatus(order.id, 'Em Trânsito', 'Rumo à Cidade de Entrega')}
-                        className={`p-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Em Trânsito' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-50 text-slate-400'}`}
+                        className={`p-3 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Em Trânsito' ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'border-slate-50 text-slate-400'}`}
                      >
                        Em Trânsito
                      </button>
@@ -291,7 +328,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
                   <button 
                      onClick={() => updateOrderStatus(order.id, 'Entregue', 'Endereço do Cliente')}
-                     className={`w-full p-4 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border-2 transition-all ${order.status === 'Entregue' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-50 text-slate-400'}`}
+                     className={`w-full p-4 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border-2 transition-all active:scale-95 ${order.status === 'Entregue' ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100' : 'border-slate-50 text-slate-400'}`}
                   >
                     {order.status === 'Entregue' ? <Check size={16} /> : null}
                     Marcar como Entregue
