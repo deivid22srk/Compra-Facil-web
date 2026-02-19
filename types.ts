@@ -9,6 +9,7 @@ export interface Product {
   image_urls: string[];
   rating: number;
   rating_count: number;
+  stock_quantity: number;
   created_at?: string;
 }
 

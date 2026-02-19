@@ -1,15 +1,16 @@
 
--- Tabela de Produtos
+-- Tabela de Produtos (Atualizada com Estoque)
 create table if not exists public.products (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   description text,
   price decimal not null,
   original_price decimal,
-  category text, -- Agora será 'Produtos' ou 'Serviços'
+  category text, 
   image_urls text[] default '{}',
   rating decimal default 5.0,
   rating_count integer default 0,
+  stock_quantity integer default 1, -- Nova coluna para controle de estoque
   created_at timestamp with time zone default now()
 );
 
@@ -47,19 +48,15 @@ alter table public.products enable row level security;
 alter table public.orders enable row level security;
 alter table public.reviews enable row level security;
 
--- Políticas de Produtos
+-- Políticas
 create policy "Leitura pública produtos" on public.products for select using (true);
 create policy "Admin total produtos" on public.products for all using (
   (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean = true
 );
-
--- Políticas de Pedidos
 create policy "Ver próprios pedidos" on public.orders for select using (auth.uid() = user_id);
 create policy "Criar pedidos" on public.orders for insert with check (auth.role() = 'authenticated');
 create policy "Admin total pedidos" on public.orders for all using (
   (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean = true
 );
-
--- Políticas de Reviews
 create policy "Leitura pública reviews" on public.reviews for select using (true);
 create policy "Usuários criam reviews" on public.reviews for insert with check (auth.role() = 'authenticated');
