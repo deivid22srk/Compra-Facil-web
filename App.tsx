@@ -34,12 +34,8 @@ const App: React.FC = () => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        // If user logged in while on Auth screen, send them home if they just started, or profile
         setCurrentView('home');
         setHasStarted(true);
-      } else {
-        // User logged out
-        setUser(null);
       }
     });
 
@@ -62,7 +58,6 @@ const App: React.FC = () => {
       setCurrentView('auth');
       return;
     }
-    // Set cart to just this product and go to checkout
     setCart([{ ...product, quantity: 1 }]);
     setCurrentView('cart');
   };
@@ -82,24 +77,14 @@ const App: React.FC = () => {
     setCurrentView('details');
   };
 
-  const handleStartAsGuest = () => {
-    setHasStarted(true);
-    setCurrentView('home');
-  };
-
-  const handleGoToAuth = () => {
-    setCurrentView('auth');
-  };
-
   const handleOrderSuccess = () => {
     setCart([]);
     setCurrentView('profile');
-    alert('Pedido realizado com sucesso! Pague ao entregador quando receber seus produtos.');
   };
 
   const renderView = () => {
     if (currentView === 'welcome' && !user && !hasStarted) {
-      return <WelcomeView onStartAsGuest={handleStartAsGuest} onGoToAuth={handleGoToAuth} />;
+      return <WelcomeView onStartAsGuest={() => { setHasStarted(true); setCurrentView('home'); }} onGoToAuth={() => setCurrentView('auth')} />;
     }
 
     switch (currentView) {
@@ -111,26 +96,14 @@ const App: React.FC = () => {
         return <ProfileView user={user} onBack={() => setCurrentView('home')} onAuthClick={() => setCurrentView('auth')} />;
       case 'details':
         return selectedProduct ? (
-          <ProductDetails 
-            product={selectedProduct} 
-            onBack={() => setCurrentView('home')} 
-            onAddToCart={addToCart}
-            onBuyNow={handleBuyNow}
-          />
+          <ProductDetails product={selectedProduct} onBack={() => setCurrentView('home')} onAddToCart={addToCart} onBuyNow={handleBuyNow} />
         ) : <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
       case 'cart':
-        return <CartView 
-          cart={cart} 
-          user={user} 
-          onUpdateQuantity={updateCartQuantity} 
-          onBack={() => setCurrentView('home')} 
-          onOrderSuccess={handleOrderSuccess} 
-          onGoToAuth={() => setCurrentView('auth')}
-        />;
+        return <CartView cart={cart} user={user} onUpdateQuantity={updateCartQuantity} onBack={() => setCurrentView('home')} onOrderSuccess={handleOrderSuccess} onGoToAuth={() => setCurrentView('auth')} />;
       case 'admin':
         return user ? <AdminPanel onBack={() => setCurrentView('home')} /> : <AuthView onBack={() => setCurrentView('home')} />;
       case 'auth':
-        return <AuthView onBack={() => (hasStarted ? (user ? setCurrentView('profile') : setCurrentView('home')) : setCurrentView('welcome'))} />;
+        return <AuthView onBack={() => setCurrentView('home')} />;
       default:
         return <ShopHome onProductClick={navigateToDetails} onAddToCart={addToCart} onOpenSearch={() => setCurrentView('search')} />;
     }
@@ -139,7 +112,7 @@ const App: React.FC = () => {
   const showNav = currentView !== 'details' && currentView !== 'welcome' && currentView !== 'search' && (currentView !== 'auth' || hasStarted);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden flex flex-col">
+    <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative overflow-hidden flex flex-col border-x border-slate-100 transition-colors">
       <div className={`flex-1 overflow-y-auto no-scrollbar ${showNav ? "pb-24" : ""}`}>
         {renderView()}
       </div>

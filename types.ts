@@ -21,6 +21,9 @@ export interface Order {
   status: string;
   tracking_code?: string;
   last_location?: string;
+  delivery_lat: number;
+  delivery_lng: number;
+  payment_method: string;
   created_at: string;
 }
 
