@@ -16,63 +16,66 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, onNavigate, cartCount
 
   return (
     <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto h-20 glass border-t border-slate-100 z-50">
-      <div className="grid grid-cols-5 h-full items-center px-4">
+      {/* Usamos grid-cols-5 com w-full para garantir que o centro seja o centro real do dispositivo */}
+      <div className="grid grid-cols-5 h-full w-full items-center">
         
-        {/* Slot 1: Home */}
+        {/* Coluna 1: Home */}
         <button 
           onClick={() => onNavigate('home')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'home' ? 'text-orange-600 scale-105' : 'text-slate-300'}`}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'home' ? 'text-orange-600' : 'text-slate-300'}`}
         >
           <Home size={18} fill={activeView === 'home' ? 'currentColor' : 'none'} fillOpacity={0.1} />
           <span className="text-[7px] font-black uppercase tracking-widest">Início</span>
         </button>
 
-        {/* Slot 2: Admin ou Vazio */}
-        {isAdmin ? (
-          <button 
-            className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'admin' ? 'text-orange-600 scale-105' : 'text-slate-300'}`}
-            onClick={() => onNavigate('admin')}
-          >
-            <LayoutGrid size={18} fill={activeView === 'admin' ? 'currentColor' : 'none'} fillOpacity={0.1} />
-            <span className="text-[7px] font-black uppercase tracking-widest">Admin</span>
-          </button>
-        ) : (
-          <div className="flex flex-col items-center justify-center opacity-20">
-             <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
-          </div>
-        )}
+        {/* Coluna 2: Admin ou Espaçador */}
+        <div className="flex justify-center">
+          {isAdmin ? (
+            <button 
+              className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'admin' ? 'text-orange-600' : 'text-slate-300'}`}
+              onClick={() => onNavigate('admin')}
+            >
+              <LayoutGrid size={18} fill={activeView === 'admin' ? 'currentColor' : 'none'} fillOpacity={0.1} />
+              <span className="text-[7px] font-black uppercase tracking-widest">Admin</span>
+            </button>
+          ) : (
+            <div className="w-10" /> // Espaçador invisível para manter o equilíbrio do grid
+          )}
+        </div>
 
-        {/* Slot 3: CART (Sempre Centralizado) */}
-        <div className="relative flex justify-center">
+        {/* Coluna 3: SACOLA (CENTRO ABSOLUTO) */}
+        <div className="relative flex flex-col items-center justify-center h-full">
           <button 
             onClick={() => onNavigate('cart')}
-            className="absolute -top-10 w-14 h-14 rounded-2xl bg-orange-600 text-white shadow-xl shadow-orange-500/30 flex items-center justify-center hover:scale-105 active:scale-90 transition-all border-4 border-white"
+            className="absolute -top-10 w-15 h-15 rounded-2xl bg-orange-600 text-white shadow-xl shadow-orange-500/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-4 border-white"
           >
             <div className="relative">
-              <ShoppingBag size={20} />
+              <ShoppingBag size={22} />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-orange-600">
+                <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[8px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-orange-600 animate-in zoom-in">
                   {cartCount}
                 </span>
               )}
             </div>
           </button>
-          <span className={`mt-8 text-[7px] font-black uppercase tracking-widest ${activeView === 'cart' ? 'text-orange-600' : 'text-slate-300'}`}>Sacola</span>
+          <span className={`mt-8 text-[7px] font-black uppercase tracking-widest ${activeView === 'cart' ? 'text-orange-600' : 'text-slate-400'}`}>Sacola</span>
         </div>
 
-        {/* Slot 4: Profile */}
-        <button 
-          onClick={() => onNavigate('profile')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'profile' ? 'text-orange-600 scale-105' : 'text-slate-300'}`}
-        >
-          <User size={18} fill={activeView === 'profile' ? 'currentColor' : 'none'} fillOpacity={0.1} />
-          <span className="text-[7px] font-black uppercase tracking-widest">Perfil</span>
-        </button>
+        {/* Coluna 4: Profile */}
+        <div className="flex justify-center">
+          <button 
+            onClick={() => onNavigate('profile')}
+            className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'profile' ? 'text-orange-600' : 'text-slate-300'}`}
+          >
+            <User size={18} fill={activeView === 'profile' ? 'currentColor' : 'none'} fillOpacity={0.1} />
+            <span className="text-[7px] font-black uppercase tracking-widest">Perfil</span>
+          </button>
+        </div>
 
-        {/* Slot 5: Search */}
+        {/* Coluna 5: Search */}
         <button 
           onClick={() => onNavigate('search')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'search' ? 'text-orange-600 scale-105' : 'text-slate-300'}`}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeView === 'search' ? 'text-orange-600' : 'text-slate-300'}`}
         >
           <Search size={18} />
           <span className="text-[7px] font-black uppercase tracking-widest">Buscar</span>

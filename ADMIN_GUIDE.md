@@ -1,30 +1,28 @@
 
 # Guia do Administrador - CompraFácil Riacho
 
-Este aplicativo separa usuários comuns de Administradores (ADM) para garantir a segurança dos dados e gestão da loja.
+## 🚀 Método Rápido: Tornar Admin via SQL (Recomendado)
 
-## Como tornar um usuário Administrador
+Não é mais necessário editar o JSON manualmente para cada usuário. Siga estes passos:
 
-Atualmente, a verificação é feita através do `user_metadata` do Supabase. Para promover um usuário, você deve:
+1. Abra o arquivo **`SETUP_ADMINS.sql`** que está na raiz do projeto.
+2. Copie o código contido nele.
+3. Acesse o [Dashboard do Supabase](https://supabase.com).
+4. No menu lateral esquerdo, clique em **SQL Editor**.
+5. Clique em **New Query**.
+6. Cole o código e substitua os e-mails pelos e-mails dos moradores que serão administradores.
+7. Clique em **RUN**.
 
-1. Acesse o [Painel do Supabase](https://supabase.com).
-2. Vá em **Authentication** > **Users**.
-3. Selecione o usuário desejado.
-4. Clique em **Edit User Metadata**.
-5. Adicione a seguinte chave JSON:
-   ```json
-   {
-     "is_admin": true
-   }
-   ```
-6. Salve. Na próxima vez que o usuário entrar no app, ele terá acesso ao botão **Admin** no menu inferior.
+---
 
-## O que o Administrador pode fazer:
-- **Produtos**: Criar, editar e excluir produtos ou serviços.
-- **Pedidos**: Ver todos os pedidos de todos os moradores do Riacho, alterar o status (Em Trânsito/Entregue) e ver a localização exata no mapa para entrega.
-- **WhatsApp**: Link direto para iniciar conversa com o cliente que fez o pedido.
+## 🛠️ O que muda no App como Admin?
 
-## Categorias Atuais:
-O sistema foi simplificado para:
-- `Produtos`: Itens físicos (roupas, eletrônicos, etc).
-- `Serviços`: Mão de obra ou serviços locais (consertos, aulas, etc).
+Quando você estiver logado com um e-mail da lista:
+1. **Menu Inferior**: Um novo botão "Admin" aparecerá exatamente ao lado do botão de Início.
+2. **Gestão de Pedidos**: Você terá acesso ao painel para mudar o status para "Em Trânsito" ou "Entregue".
+3. **Localização**: Você poderá clicar em "Localização" no pedido para abrir o Google Maps e ver exatamente onde o morador está no Riacho para fazer a entrega.
+
+## 📦 Categorias
+O app agora é focado em:
+- **Produtos**: Itens de mercearia, eletrônicos, roupas.
+- **Serviços**: Diárias, consertos, aulas e mão de obra local.
